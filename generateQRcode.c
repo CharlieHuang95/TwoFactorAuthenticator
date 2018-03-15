@@ -24,8 +24,17 @@ main(int argc, char * argv[])
 
 	// Create an otpauth:// URI and display a QR code that's compatible
 	// with Google Authenticator
+	char buf[100];
+	char secret_hex_buf[100];
+	base32_encode(secret_hex,
+		      strlen(secret_hex),
+                      secret_hex_buf,
+		      100);
+	snprintf(buf, 100, "otpauth://hotp/%s?issuer=%s&secret=%s&counter=1",
+		 urlEncode(accountName), urlEncode(issuer),
+		 secret_hex_buf); 
 
-	displayQRcode("otpauth://testing");
+	displayQRcode(buf);
 
 	return (0);
 }
