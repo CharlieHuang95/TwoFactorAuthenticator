@@ -24,17 +24,34 @@ main(int argc, char * argv[])
 
 	// Create an otpauth:// URI and display a QR code that's compatible
 	// with Google Authenticator
-	char buf[100];
-	char secret_hex_buf[100];
-	base32_encode(secret_hex,
-		      strlen(secret_hex),
+	char buf_hotp[100];
+	char buf_totp[100];
+	
+	uint8_t secret[10];
+	uint8_t secret_hex_buf[100];
+	int i = 0;
+	
+	// Prepare secret_hex into format accepted by base32_encode
+	for (i = 0; i<strlen(secret_hex)/2; i++) {
+	    sscanf(secret_hex + 2*i, "%02x", &secret[i]);
+	}
+	
+	// Write encoded secret into secret_hex_buf
+	base32_encode(secret,
+		      strlen(secret),
                       secret_hex_buf,
 		      100);
-	snprintf(buf, 100, "otpauth://hotp/%s?issuer=%s&secret=%s&counter=1",
+		      
+    // display HOTP and TOTP QR codes
+	snprintf(buf_hotp, 100, "otpauth://hotp/%s?issuer=%s&secret=%s&counter=1",
 		 urlEncode(accountName), urlEncode(issuer),
 		 secret_hex_buf); 
-
-	displayQRcode(buf);
-
+	displayQRcode(buf_hotp);
+	
+	snprintf(buf_totp, 100, "otpauth://totp/%s?issuer=%s&secret=%s&period=30",
+		 urlEncode(accountName), urlEncode(issuer),
+		 secret_hex_buf); 
+	displayQRcode(buf_totp);
+	
 	return (0);
 }
