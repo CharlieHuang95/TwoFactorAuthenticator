@@ -19,11 +19,15 @@ char* hash_sha1(char* secret_hex) {
 }
 */
 
+#define DEBUG 1
+
 #define BLOCK_SIZE 64 // 512 / 8 bits = 64 bytes (SHA1)
 
-char* get_hmac(uint8_t* secret_hex, uint8_t message) {
+void get_hmac(char* secret_hex, uint8_t message, uint8_t* sha_out) {
+    if (DEBUG) { printf("%s %s %s", secret_hex, message, sha_out); fflush(stdout); }
 	uint8_t ipad[BLOCK_SIZE];
 	uint8_t opad[BLOCK_SIZE];
+    uint8_t sha_1[SHA1_DIGEST_LENGTH];
 	int i;
 	for (i = 0; i < 10; i++) {
 		ipad[i] = secret_hex[i] & 0x36;
@@ -35,21 +39,27 @@ char* get_hmac(uint8_t* secret_hex, uint8_t message) {
 	SHA1_INFO ctx_in;
 	SHA1_INFO ctx_out;
 	sha1_init(&ctx_in);
-	sha1_update(&ctx_in, secret_hex, BLOCK_SIZE);
-		
+
+    // If we take the hash with two updates, it is the same as taking a single
+    // hash with the two inputs concatenated
+	sha1_update(&ctx_in, ipad, BLOCK_SIZE);
+    sha1_update(&ctx_in, &message, 1);
+    sha1_final(&ctx_in, sha_1);
+
+    sha1_init(&ctx_out);
+    sha1_update(&ctx_out, opad, BLOCK_SIZE);
+    sha1_update(&ctx_out, sha_1, SHA1_DIGEST_LENGTH);
+    sha1_final(&ctx_out, sha_out); 
 }
 
 static int
 validateHOTP(char * secret_hex, char * HOTP_string)
 {
+    if (DEBUG) { printf("%s %s", secret_hex, HOTP_string); fflush(stdout); }
 	SHA1_INFO       ctx;
 	char         sha[SHA1_DIGEST_LENGTH];
-	printf("%s", secret_hex);
-	sha1_init(&ctx);
-        sha1_update(&ctx, secret_hex, strlen(secret_hex));
-        sha1_final(&ctx, sha);
-	printf("%s", sha);
-	printf("%s", HOTP_string);
+    if (DEBUG) { printf("about to call get_hmax"); fflush(stdout); }
+    get_hmac(secret_hex, 1, sha);
 	return strcmp(sha, HOTP_string) == 0 ? 1 : 0;
 }
 
@@ -71,9 +81,9 @@ main(int argc, char * argv[])
 	char *	HOTP_value = argv[2];
 	char *	TOTP_value = argv[3];
 
-        assert (strlen(secret_hex_in_ascii) <= 20);
-        assert (strlen(HOTP_value) == 6);
-        assert (strlen(TOTP_value) == 6);
+    assert (strlen(secret_hex_in_ascii) <= 20);
+    assert (strlen(HOTP_value) == 6);
+    assert (strlen(TOTP_value) == 6);
 
 	// Interpret the value as a hexadecimal. It would have been read in
 	// as an ascii, thus having twice the length that is should have.
@@ -82,13 +92,13 @@ main(int argc, char * argv[])
 	uint8_t secret_hex[10];
 	int i, len;
 
-    	len = strlen(secret_hex_in_ascii);
-    	if (secret_hex[len-1] == '\n')
-        	secret_hex[--len] = '\0';
+    len = strlen(secret_hex_in_ascii);
+    if (secret_hex[len-1] == '\n')
+       	secret_hex[--len] = '\0';
 
 	for (i = 0; i < (len / 2); i++) {
 		sscanf(secret_hex_in_ascii + 2*i, "%02X", &secret_hex[i]);
-    	}
+    }
 
 	printf("\nSecret (Hex): %s\nHTOP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",
 		secret_hex,
