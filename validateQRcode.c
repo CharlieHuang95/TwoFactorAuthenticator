@@ -23,7 +23,7 @@ char* hash_sha1(char* secret_hex) {
 
 #define BLOCK_SIZE 64 // 512 / 8 bits = 64 bytes (SHA1)
 
-void get_hmac(char* secret_hex, uint8_t message, uint8_t* sha_out) {
+void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
     if (DEBUG) { printf("%s %s %s", secret_hex, message, sha_out); fflush(stdout); }
 	uint8_t ipad[BLOCK_SIZE];
 	uint8_t opad[BLOCK_SIZE];
@@ -33,6 +33,10 @@ void get_hmac(char* secret_hex, uint8_t message, uint8_t* sha_out) {
 		ipad[i] = secret_hex[i] & 0x36;
 		opad[i] = secret_hex[i] & 0x5c;
 	}
+    for (; i < BLOCK_SIZE; i++) {
+        ipad[i] = '0';
+        opad[i] = '0';
+    }
 	// SHA1(secret_hex, ipad) -> inner_hash
 	// SHA1(message, opad) -> outer_hash
 	// return outer_hash
@@ -57,9 +61,11 @@ validateHOTP(char * secret_hex, char * HOTP_string)
 {
     if (DEBUG) { printf("%s %s", secret_hex, HOTP_string); fflush(stdout); }
 	SHA1_INFO       ctx;
-	char         sha[SHA1_DIGEST_LENGTH];
+	uint8_t sha[SHA1_DIGEST_LENGTH];
     if (DEBUG) { printf("about to call get_hmax"); fflush(stdout); }
-    get_hmac(secret_hex, 1, sha);
+    uint8_t counter[8] = {0};
+    counter[7] = 1; //{ 0, 0, 0, 0, 0, 0, 0, 1 };
+    get_hmac(secret_hex, counter, sha);
 	return strcmp(sha, HOTP_string) == 0 ? 1 : 0;
 }
 
