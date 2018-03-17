@@ -20,7 +20,7 @@ char* hash_sha1(char* secret_hex) {
 }
 */
 
-#define DEBUG 1
+#define DEBUG 0 
 
 #define BLOCK_SIZE 64 // 512 / 8 bits = 64 bytes (SHA1)
 
@@ -38,20 +38,20 @@ void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
         secret_key_padded[i] = 0x00;
     }
     for (i = 0; i < BLOCK_SIZE; i++) {
-		ipad[i] = secret_key_padded[i] ^ 0x36;
-		opad[i] = secret_key_padded[i] ^ 0x5c;
-	}
+        ipad[i] = secret_key_padded[i] ^ 0x36;
+        opad[i] = secret_key_padded[i] ^ 0x5c;
+    }
 
 	// SHA1(secret_hex, ipad) -> inner_hash
 	// SHA1(message, opad) -> outer_hash
 	// return outer_hash
-	SHA1_INFO ctx_in;
-	SHA1_INFO ctx_out;
-	sha1_init(&ctx_in);
+    SHA1_INFO ctx_in;
+    SHA1_INFO ctx_out;
+    sha1_init(&ctx_in);
 
     // If we take the hash with two updates, it is the same as taking a single
     // hash with the two inputs concatenated
-	sha1_update(&ctx_in, ipad, BLOCK_SIZE);
+    sha1_update(&ctx_in, ipad, BLOCK_SIZE);
     sha1_update(&ctx_in, message, 8);
 
     sha1_final(&ctx_in, sha_1);
@@ -84,10 +84,10 @@ static int validateHOTP(char * secret_hex, char * HOTP_string) {
     uint8_t counter[8] = { 0, 0, 0, 0, 0, 0, 0, 1 };
     get_hmac(secret_hex, counter, sha);
     int bin_code = dynamic_truncation(sha) % 1000000;
-    printf("Binary code is %d\n", bin_code);
+    if (DEBUG) { printf("Binary code is %d\n", bin_code); }
     int HOTP_int = atoi(HOTP_string);
-    printf("HOTP %d\n", HOTP_int);
-	return bin_code == HOTP_int ? 1 : 0;
+    if (DEBUG) { printf("HOTP %d\n", HOTP_int); }
+    return bin_code == HOTP_int ? 1 : 0;
 }
 
 static int
@@ -111,21 +111,19 @@ validateTOTP(char * secret_hex, char * TOTP_string)
 	return strcmp(sha, TOTP_string) == 0 ? 1 : 0;
 }
 
-int
-main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]) {
 	if ( argc != 4 ) {
 		printf("Usage: %s [secretHex] [HOTP] [TOTP]\n", argv[0]);
 		return(-1);
 	}
 
-	char *	secret_hex_in_ascii = argv[1];
-	char *	HOTP_value = argv[2];
-	char *	TOTP_value = argv[3];
+	char* secret_hex_in_ascii = argv[1];
+	char* HOTP_value = argv[2];
+	char* TOTP_value = argv[3];
 
-    assert (strlen(secret_hex_in_ascii) <= 20);
-    assert (strlen(HOTP_value) == 6);
-    assert (strlen(TOTP_value) == 6);
+    assert(strlen(secret_hex_in_ascii) == 20);
+    assert(strlen(HOTP_value) == 6);
+    assert(strlen(TOTP_value) == 6);
 
 	// Interpret the value as a hexadecimal. It would have been read in
 	// as an ascii, thus having twice the length that is should have.
@@ -135,15 +133,12 @@ main(int argc, char * argv[])
 	int i, len;
 
     len = strlen(secret_hex_in_ascii);
-    if (secret_hex[len-1] == '\n')
-       	secret_hex[--len] = '\0';
-
 	for (i = 0; i < (len / 2); i++) {
 		sscanf(secret_hex_in_ascii + 2*i, "%02x", &secret_hex[i]);
     }
 
 	printf("\nSecret (Hex): %s\nHTOP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",
-		secret_hex,
+		secret_hex_in_ascii,
 		HOTP_value,
 		validateHOTP(secret_hex, HOTP_value) ? "valid" : "invalid",
 		TOTP_value,

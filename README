@@ -1,0 +1,6 @@
+#Haoen Huang, 1000738570, haoen.huang@mail.utoronto.ca
+#Xiuyan Yu, 1000756719, xiuyan.yu@mail.utoronto.ca
+
+The {H,T}OTP algorthms for digit = 6 first does a HMAC, followed by a dynamic truncation. The HMAC algorithm was provided in the slides, and is H((K^opad)||H(K^ipad||M)). This was implemented with the sha1_init, sha1_update, and sha1_final functions provided by sha1.h.
+
+Dynamic truncation was provided in the documentation in docs/rfc4226.pdf on page 7. The result of dynamic truncation is then modulo-ed by 1,000,000 to obtain a 6 digit number.
