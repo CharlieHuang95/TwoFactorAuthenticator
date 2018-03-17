@@ -1,0 +1,10 @@
+#Haoen Huang, 1000738570, haoen.huang@mail.utoronto.ca
+#Xiuyan Yu, 1000756719, xiuyan.yu@mail.utoronto.ca
+
+The {H,T}OTP algorthms for digit = 6 first does a HMAC, followed by a dynamic truncation. The HMAC algorithm was provided in the slides, and is H((K^opad)||H(K^ipad||M)). This was implemented with the sha1_init, sha1_update, and sha1_final functions provided by sha1.h.
+
+For HOTP, the message hashed alongside the secret was count 1. For TOTP, the message was Unix time in seconds divided by period 30. Both were encoded as uint8_t arrays before hashing into the passwords.
+
+Dynamic truncation was provided in the documentation in docs/rfc4226.pdf on page 7. The result of dynamic truncation is then modulo-ed by 1,000,000 to obtain a 6 digit number.
+
+For this implementation, the input secret was assumed to be always given as 20 characters as specified in the Lab3 instructions. For both generation as well as validation, the input was converted from ASCII to hexadecimal using sscanf, and in the case of generation, it was then converted into a uint8_t array to be consistent with the encode function requirements.

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <time.h>
@@ -20,7 +21,11 @@ char* hash_sha1(char* secret_hex) {
 }
 */
 
+<<<<<<< Updated upstream
 #define DEBUG 0 
+=======
+#define DEBUG 0
+>>>>>>> Stashed changes
 
 #define BLOCK_SIZE 64 // 512 / 8 bits = 64 bytes (SHA1)
 
@@ -84,20 +89,26 @@ static int validateHOTP(char * secret_hex, char * HOTP_string) {
     uint8_t counter[8] = { 0, 0, 0, 0, 0, 0, 0, 1 };
     get_hmac(secret_hex, counter, sha);
     int bin_code = dynamic_truncation(sha) % 1000000;
+<<<<<<< Updated upstream
     if (DEBUG) { printf("Binary code is %d\n", bin_code); }
     int HOTP_int = atoi(HOTP_string);
     if (DEBUG) { printf("HOTP %d\n", HOTP_int); }
     return bin_code == HOTP_int ? 1 : 0;
+=======
+    if (DEBUG) printf("Binary code is %d\n", bin_code);
+    int HOTP_int = atoi(HOTP_string);
+    if (DEBUG) printf("HOTP %d\n", bin_code);
+	return bin_code == HOTP_int ? 1 : 0;
+>>>>>>> Stashed changes
 }
 
 static int
 validateTOTP(char * secret_hex, char * TOTP_string)
 {
-	int period = 30;    
-	if (DEBUG) { printf("%s %s", secret_hex, TOTP_string); fflush(stdout); }
 	SHA1_INFO       ctx;
 	uint8_t sha[SHA1_DIGEST_LENGTH];
     if (DEBUG) { printf("about to call get_hmax"); fflush(stdout); }
+	int period = 30;
 	int T = time(NULL) / period;
 	// convert time to binary vector
 	uint8_t message[8] = {0};
@@ -108,7 +119,10 @@ validateTOTP(char * secret_hex, char * TOTP_string)
 	if (DEBUG) { printf("\n%d\n", T); }
 	if (DEBUG) { int i; for (i=0;i<8;i++){ printf("%d\n", message[i]); }}
     get_hmac(secret_hex, message, sha);
-	return strcmp(sha, TOTP_string) == 0 ? 1 : 0;
+	int bin_code = dynamic_truncation(sha) % 1000000;
+	int TOTP_int = atoi(TOTP_string);
+	if (DEBUG) printf("TOTP %d\n", bin_code);
+	return bin_code == TOTP_int ? 1 : 0;
 }
 
 int main(int argc, char * argv[]) {
@@ -137,7 +151,11 @@ int main(int argc, char * argv[]) {
 		sscanf(secret_hex_in_ascii + 2*i, "%02x", &secret_hex[i]);
     }
 
+<<<<<<< Updated upstream
 	printf("\nSecret (Hex): %s\nHTOP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",
+=======
+	printf("\nSecret (Hex): %s\nHOTP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",
+>>>>>>> Stashed changes
 		secret_hex_in_ascii,
 		HOTP_value,
 		validateHOTP(secret_hex, HOTP_value) ? "valid" : "invalid",
