@@ -21,11 +21,8 @@ char* hash_sha1(char* secret_hex) {
 }
 */
 
-<<<<<<< Updated upstream
 #define DEBUG 0 
-=======
-#define DEBUG 0
->>>>>>> Stashed changes
+
 
 #define BLOCK_SIZE 64 // 512 / 8 bits = 64 bytes (SHA1)
 
@@ -89,17 +86,10 @@ static int validateHOTP(char * secret_hex, char * HOTP_string) {
     uint8_t counter[8] = { 0, 0, 0, 0, 0, 0, 0, 1 };
     get_hmac(secret_hex, counter, sha);
     int bin_code = dynamic_truncation(sha) % 1000000;
-<<<<<<< Updated upstream
-    if (DEBUG) { printf("Binary code is %d\n", bin_code); }
-    int HOTP_int = atoi(HOTP_string);
-    if (DEBUG) { printf("HOTP %d\n", HOTP_int); }
-    return bin_code == HOTP_int ? 1 : 0;
-=======
     if (DEBUG) printf("Binary code is %d\n", bin_code);
     int HOTP_int = atoi(HOTP_string);
     if (DEBUG) printf("HOTP %d\n", bin_code);
 	return bin_code == HOTP_int ? 1 : 0;
->>>>>>> Stashed changes
 }
 
 static int
@@ -151,11 +141,7 @@ int main(int argc, char * argv[]) {
 		sscanf(secret_hex_in_ascii + 2*i, "%02x", &secret_hex[i]);
     }
 
-<<<<<<< Updated upstream
-	printf("\nSecret (Hex): %s\nHTOP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",
-=======
 	printf("\nSecret (Hex): %s\nHOTP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",
->>>>>>> Stashed changes
 		secret_hex_in_ascii,
 		HOTP_value,
 		validateHOTP(secret_hex, HOTP_value) ? "valid" : "invalid",
