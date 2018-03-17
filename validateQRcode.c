@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #include "lib/encoding.h"
 #include "lib/sha1.h"
@@ -47,7 +48,7 @@ void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
     // If we take the hash with two updates, it is the same as taking a single
     // hash with the two inputs concatenated
 	sha1_update(&ctx_in, ipad, BLOCK_SIZE);
-    sha1_update(&ctx_in, &message, 1);
+    sha1_update(&ctx_in, message, 1);
     sha1_final(&ctx_in, sha_1);
 
     sha1_init(&ctx_out);
@@ -72,7 +73,22 @@ validateHOTP(char * secret_hex, char * HOTP_string)
 static int
 validateTOTP(char * secret_hex, char * TOTP_string)
 {
-	return (0);
+	int period = 30;    
+	if (DEBUG) { printf("%s %s", secret_hex, TOTP_string); fflush(stdout); }
+	SHA1_INFO       ctx;
+	uint8_t sha[SHA1_DIGEST_LENGTH];
+    if (DEBUG) { printf("about to call get_hmax"); fflush(stdout); }
+	int T = time(NULL) / period;
+	// convert time to binary vector
+	uint8_t message[8] = {0};
+	message[7] = 0x0FF & T;
+	message[6] = 0x0FF & (T>>8);
+	message[5] = 0x0FF & (T>>16);
+	message[4] = 0x0FF & (T>>24);
+	if (DEBUG) { printf("\n%d\n", T); }
+	if (DEBUG) { int i; for (i=0;i<8;i++){ printf("%d\n", message[i]); }}
+    get_hmac(secret_hex, message, sha);
+	return strcmp(sha, TOTP_string) == 0 ? 1 : 0;
 }
 
 int
