@@ -25,7 +25,7 @@ char* hash_sha1(char* secret_hex) {
 #define BLOCK_SIZE 64 // 512 / 8 bits = 64 bytes (SHA1)
 
 void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
-    if (DEBUG) { printf("%s %s %s", secret_hex, message, sha_out); fflush(stdout); }
+    if (DEBUG) { printf("\nget_hmac %s, %s, %s\n", secret_hex, message, sha_out); fflush(stdout); }
     uint8_t secret_key_padded[BLOCK_SIZE];
 	uint8_t ipad[BLOCK_SIZE];
 	uint8_t opad[BLOCK_SIZE];
@@ -35,16 +35,13 @@ void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
         secret_key_padded[i] = secret_hex[i];
     }
     for (; i < BLOCK_SIZE; i++) {
-        secret_key_padded[i] = 0xff;
+        secret_key_padded[i] = 0x00;
     }
     for (i = 0; i < BLOCK_SIZE; i++) {
 		ipad[i] = secret_key_padded[i] ^ 0x36;
 		opad[i] = secret_key_padded[i] ^ 0x5c;
 	}
-//    for (; i < BLOCK_SIZE; i++) {
-//        ipad[i] = 0x00;
-//        opad[i] = 0x00;
-//    }
+
 	// SHA1(secret_hex, ipad) -> inner_hash
 	// SHA1(message, opad) -> outer_hash
 	// return outer_hash
@@ -62,7 +59,7 @@ void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
     sha1_init(&ctx_out);
     sha1_update(&ctx_out, opad, BLOCK_SIZE);
     sha1_update(&ctx_out, sha_1, SHA1_DIGEST_LENGTH);
-    sha1_final(&ctx_out, sha_out); 
+    sha1_final(&ctx_out, sha_out);
 }
 
 int dynamic_truncation(uint8_t* hash) {
@@ -88,7 +85,9 @@ static int validateHOTP(char * secret_hex, char * HOTP_string) {
     get_hmac(secret_hex, counter, sha);
     int bin_code = dynamic_truncation(sha) % 1000000;
     printf("Binary code is %d\n", bin_code);
-	return strcmp(sha, HOTP_string) == 0 ? 1 : 0;
+    int HOTP_int = atoi(HOTP_string);
+    printf("HOTP %d\n", HOTP_int);
+	return bin_code == HOTP_int ? 1 : 0;
 }
 
 static int
