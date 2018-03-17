@@ -26,18 +26,25 @@ char* hash_sha1(char* secret_hex) {
 
 void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
     if (DEBUG) { printf("%s %s %s", secret_hex, message, sha_out); fflush(stdout); }
+    uint8_t secret_key_padded[BLOCK_SIZE];
 	uint8_t ipad[BLOCK_SIZE];
 	uint8_t opad[BLOCK_SIZE];
     uint8_t sha_1[SHA1_DIGEST_LENGTH];
 	int i;
 	for (i = 0; i < 10; i++) {
-		ipad[i] = secret_hex[i] & 0x36;
-		opad[i] = secret_hex[i] & 0x5c;
-	}
-    for (; i < BLOCK_SIZE; i++) {
-        ipad[i] = '0';
-        opad[i] = '0';
+        secret_key_padded[i] = secret_hex[i];
     }
+    for (; i < BLOCK_SIZE; i++) {
+        secret_key_padded[i] = 0xff;
+    }
+    for (i = 0; i < BLOCK_SIZE; i++) {
+		ipad[i] = secret_key_padded[i] ^ 0x36;
+		opad[i] = secret_key_padded[i] ^ 0x5c;
+	}
+//    for (; i < BLOCK_SIZE; i++) {
+//        ipad[i] = 0x00;
+//        opad[i] = 0x00;
+//    }
 	// SHA1(secret_hex, ipad) -> inner_hash
 	// SHA1(message, opad) -> outer_hash
 	// return outer_hash
@@ -48,7 +55,8 @@ void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
     // If we take the hash with two updates, it is the same as taking a single
     // hash with the two inputs concatenated
 	sha1_update(&ctx_in, ipad, BLOCK_SIZE);
-    sha1_update(&ctx_in, message, 1);
+    sha1_update(&ctx_in, message, 8);
+
     sha1_final(&ctx_in, sha_1);
 
     sha1_init(&ctx_out);
@@ -57,16 +65,29 @@ void get_hmac(uint8_t* secret_hex, uint8_t* message, uint8_t* sha_out) {
     sha1_final(&ctx_out, sha_out); 
 }
 
-static int
-validateHOTP(char * secret_hex, char * HOTP_string)
-{
+int dynamic_truncation(uint8_t* hash) {
+    // Get the lower order 4 bits of String[19]
+    int offset = hash[19] & 0xf;
+    if (DEBUG) { printf("offset is %d\n", offset); }
+
+    // Obtain P, return the last 31 bits of it
+    int bin_code = (hash[offset] & 0x7f) << 24 |
+                   (hash[offset+1] & 0xff) << 16 |
+                   (hash[offset+2] & 0xff) << 8 |
+                   (hash[offset+3] & 0xff);
+    return bin_code;
+}
+
+static int validateHOTP(char * secret_hex, char * HOTP_string) {
     if (DEBUG) { printf("%s %s", secret_hex, HOTP_string); fflush(stdout); }
 	SHA1_INFO       ctx;
 	uint8_t sha[SHA1_DIGEST_LENGTH];
+    
     if (DEBUG) { printf("about to call get_hmax"); fflush(stdout); }
-    uint8_t counter[8] = {0};
-    counter[7] = 1; //{ 0, 0, 0, 0, 0, 0, 0, 1 };
+    uint8_t counter[8] = { 0, 0, 0, 0, 0, 0, 0, 1 };
     get_hmac(secret_hex, counter, sha);
+    int bin_code = dynamic_truncation(sha) % 1000000;
+    printf("Binary code is %d\n", bin_code);
 	return strcmp(sha, HOTP_string) == 0 ? 1 : 0;
 }
 
@@ -119,7 +140,7 @@ main(int argc, char * argv[])
        	secret_hex[--len] = '\0';
 
 	for (i = 0; i < (len / 2); i++) {
-		sscanf(secret_hex_in_ascii + 2*i, "%02X", &secret_hex[i]);
+		sscanf(secret_hex_in_ascii + 2*i, "%02x", &secret_hex[i]);
     }
 
 	printf("\nSecret (Hex): %s\nHTOP Value: %s (%s)\nTOTP Value: %s (%s)\n\n",

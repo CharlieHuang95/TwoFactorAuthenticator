@@ -35,7 +35,7 @@ main(int argc, char * argv[])
 	for (i = 0; i<strlen(secret_hex)/2; i++) {
 	    sscanf(secret_hex + 2*i, "%02x", &secret[i]);
 	}
-	
+    printf("%s", secret);	
 	// Write encoded secret into secret_hex_buf
 	base32_encode(secret,
 		      strlen(secret),
